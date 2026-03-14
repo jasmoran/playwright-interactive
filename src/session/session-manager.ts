@@ -93,10 +93,6 @@ export class SessionManager {
     return this.currentSession;
   }
 
-  hasActiveSession(): boolean {
-    return this.currentSession !== null;
-  }
-
   async endSession(): Promise<string> {
     const session = this.getSession();
     const outputFile = session.outputFile;

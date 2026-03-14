@@ -12,7 +12,7 @@ const EXTENSIONS: Record<SnapshotType, string> = {
   html: "html",
 };
 
-export function snapshotFileName(
+function snapshotFileName(
   commandId: number,
   phase: "before" | "after",
   type: SnapshotType,
