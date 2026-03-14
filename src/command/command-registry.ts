@@ -39,6 +39,10 @@ export class CommandRegistry {
     return this.commands.filter((c) => !c.removed);
   }
 
+  peekNextId(): number {
+    return this.nextId;
+  }
+
   getAllCommands(): readonly CommandRecord[] {
     return this.commands;
   }

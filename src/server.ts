@@ -100,8 +100,7 @@ export function createServer(): McpServer {
       try {
         const session = sessionManager.getSession();
 
-        // Peek at next ID for snapshot file naming
-        const commandId = session.commandRegistry.getAllCommands().length + 1;
+        const commandId = session.commandRegistry.peekNextId();
 
         const beforeSnapshots = await captureSnapshots(
           session.page,

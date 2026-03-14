@@ -14,7 +14,8 @@ export async function loadPoms(
 ): Promise<readonly LoadedPom[]> {
   // Register tsx for runtime .ts imports
   try {
-    await import("tsx/esm/api");
+    const { register } = await import("tsx/esm/api");
+    register();
   } catch {
     log("tsx ESM loader not available, .ts POM files may fail to import");
   }

@@ -25,11 +25,9 @@ export function generateSpecFile(
   pomImportPaths: ReadonlyMap<string, string>,
   outputFilePath: string,
 ): string {
-  const activeCommands = commands.filter((c) => !c.removed);
-
   // Determine which POM classes are referenced in active commands
   const usedPomClasses = new Set<string>();
-  for (const cmd of activeCommands) {
+  for (const cmd of commands) {
     for (const className of pomImportPaths.keys()) {
       if (cmd.command.includes(className)) {
         usedPomClasses.add(className);
@@ -64,7 +62,7 @@ export function generateSpecFile(
   lines.push("");
   lines.push('test("recorded session", async ({ page }) => {');
 
-  for (const cmd of activeCommands) {
+  for (const cmd of commands) {
     if (cmd.explanation !== undefined) {
       lines.push(`  // ${cmd.explanation}`);
     }

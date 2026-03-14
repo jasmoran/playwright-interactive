@@ -10,10 +10,7 @@ async function captureScreenshot(page: Page, filePath: string): Promise<void> {
   } catch (err: unknown) {
     logError("Failed to capture screenshot", err);
     const message = err instanceof Error ? err.message : String(err);
-    await fs.writeFile(
-      filePath + ".error.txt",
-      `Screenshot failed: ${message}`,
-    );
+    await fs.writeFile(filePath, `Screenshot failed: ${message}`);
   }
 }
 

@@ -19,12 +19,3 @@ export interface StartSessionParams {
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
 }
-
-export interface RunCommandParams {
-  readonly command: string;
-  readonly explanation?: string | undefined;
-}
-
-export interface RemoveCommandParams {
-  readonly command_id: number;
-}
