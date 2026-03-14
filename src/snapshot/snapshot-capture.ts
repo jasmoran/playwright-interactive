@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { Page } from "playwright";
+import type { Page } from "@playwright/test";
 import type { SnapshotSet } from "../types.js";
 import { logError } from "../util/logger.js";
 import { snapshotFilePath } from "../util/paths.js";

@@ -1,5 +1,4 @@
-import type { Page } from "playwright";
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { logError } from "../util/logger.js";
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type

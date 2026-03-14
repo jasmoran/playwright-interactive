@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium } from "playwright";
-import type { Browser, Page } from "playwright";
+import { chromium, type Browser, type Page } from "@playwright/test";
 import { CommandRegistry } from "../command/command-registry.js";
 import { loadPoms, type LoadedPom } from "../pom/pom-loader.js";
 import type { StartSessionParams } from "../types.js";
