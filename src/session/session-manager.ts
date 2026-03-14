@@ -44,7 +44,14 @@ export class SessionManager {
 
     log(`Session directory: ${sessionDir}`);
 
-    const browser = await chromium.launch({ headless: false });
+    const executablePath = process.env["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"];
+    if (executablePath !== undefined) {
+      log(`Using custom Chromium path: ${executablePath}`);
+    }
+    const browser = await chromium.launch({
+      headless: false,
+      ...(executablePath !== undefined ? { executablePath } : {}),
+    });
     const page = await browser.newPage();
 
     const pomClasses = new Map<string, unknown>();

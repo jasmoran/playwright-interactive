@@ -33,7 +33,10 @@ async function captureHtml(page: Page, filePath: string): Promise<void> {
     await fs.writeFile(filePath, html, "utf-8");
   } catch (err: unknown) {
     logError("Failed to capture HTML", err);
-    await fs.writeFile(filePath, `HTML capture failed: ${getErrorMessage(err)}`);
+    await fs.writeFile(
+      filePath,
+      `HTML capture failed: ${getErrorMessage(err)}`,
+    );
   }
 }
 
