@@ -1,33 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { executeCommand } from "./command/command-executor.js";
-import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
 import {
-  SessionManager,
-  type SessionState,
-} from "./session/session-manager.js";
-import { captureSnapshots } from "./snapshot/snapshot-capture.js";
-import type { SnapshotSet } from "./types.js";
-import { getErrorMessage } from "./util/errors.js";
-import { logError } from "./util/logger.js";
-
-function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
-  return [
-    `${label}:`,
-    `  screenshot: ${snapshots.screenshotPath}`,
-    `  a11y: ${snapshots.a11yPath}`,
-    `  html: ${snapshots.htmlPath}`,
-  ].join("\n");
-}
-
-async function regenerateSpecFile(session: SessionState): Promise<void> {
-  const specContent = generateSpecFile(
-    session.commandRegistry.getActiveCommands(),
-    session.pomImportPaths,
-    session.outputFile,
-  );
-  await writeSpecFile(session.outputFile, specContent);
-}
+  handleEndSession,
+  handleRemoveCommand,
+  handleRunCommand,
+  handleStartSession,
+} from "./handlers.js";
+import { SessionManager } from "./session/session-manager.js";
 
 export interface ServerInstance {
   readonly server: McpServer;
@@ -67,29 +46,7 @@ export function createServer(): ServerInstance {
           ),
       },
     },
-    async (args) => {
-      const session = await sessionManager.startSession(args);
-
-      const pomList = [...session.pomClasses.keys()];
-      const pomInfo =
-        pomList.length > 0
-          ? `POMs loaded: [${pomList.join(", ")}]`
-          : "No POMs loaded";
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "Session started.",
-              pomInfo,
-              `Output file: ${session.outputFile}`,
-              `Artifacts directory: ${session.sessionDir}`,
-            ].join("\n"),
-          },
-        ],
-      };
-    },
+    (args) => handleStartSession(sessionManager, args),
   );
 
   server.registerTool(
@@ -114,71 +71,7 @@ export function createServer(): ServerInstance {
           ),
       },
     },
-    async (args) => {
-      try {
-        const session = sessionManager.getSession();
-
-        const commandId = session.commandRegistry.peekNextId();
-
-        const beforeSnapshots = await captureSnapshots(
-          session.page,
-          session.sessionDir,
-          commandId,
-          "before",
-        );
-
-        const { error } = await executeCommand(
-          args.command,
-          session.page,
-          session.pomClasses,
-        );
-
-        const afterSnapshots = await captureSnapshots(
-          session.page,
-          session.sessionDir,
-          commandId,
-          "after",
-        );
-
-        const record = session.commandRegistry.addCommand({
-          command: args.command,
-          explanation: args.explanation,
-          beforeSnapshots,
-          afterSnapshots,
-          error,
-        });
-
-        await regenerateSpecFile(session);
-
-        const resultLines = [
-          `Command ID: ${String(record.id)}`,
-          `Command: ${record.command}`,
-          "",
-          formatSnapshotPaths("Before", beforeSnapshots),
-          formatSnapshotPaths("After", afterSnapshots),
-        ];
-
-        if (error !== undefined) {
-          resultLines.push("", `Error: ${error}`);
-        }
-
-        return {
-          content: [{ type: "text" as const, text: resultLines.join("\n") }],
-          isError: error !== undefined,
-        };
-      } catch (err: unknown) {
-        logError("run_command failed", err);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Error: ${getErrorMessage(err)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    },
+    (args) => handleRunCommand(sessionManager, args),
   );
 
   server.registerTool(
@@ -195,39 +88,7 @@ export function createServer(): ServerInstance {
           .describe("The sequential command ID returned by run_command"),
       },
     },
-    async (args) => {
-      const session = sessionManager.getSession();
-
-      const removed = session.commandRegistry.removeCommand(args.command_id);
-      if (removed === undefined) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Command ${String(args.command_id)} not found or already removed.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      // Regenerate spec file
-      const specContent = generateSpecFile(
-        session.commandRegistry.getActiveCommands(),
-        session.pomImportPaths,
-        session.outputFile,
-      );
-      await writeSpecFile(session.outputFile, specContent);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Command ${String(args.command_id)} removed from output file. Snapshot files preserved.`,
-          },
-        ],
-      };
-    },
+    (args) => handleRemoveCommand(sessionManager, args),
   );
 
   server.registerTool(
@@ -236,18 +97,7 @@ export function createServer(): ServerInstance {
       description:
         "Close the browser and finalize the session. Returns the path to the generated .spec.ts file.",
     },
-    async () => {
-      const outputFile = await sessionManager.endSession();
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Session ended. Generated test file: ${outputFile}`,
-          },
-        ],
-      };
-    },
+    () => handleEndSession(sessionManager),
   );
 
   async function cleanup(): Promise<void> {
