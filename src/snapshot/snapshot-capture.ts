@@ -4,16 +4,16 @@ import type { SnapshotSet } from "../types.js";
 import { logError } from "../util/logger.js";
 import { snapshotFilePath } from "../util/paths.js";
 
-async function captureScreenshot(
-  page: Page,
-  filePath: string,
-): Promise<void> {
+async function captureScreenshot(page: Page, filePath: string): Promise<void> {
   try {
     await page.screenshot({ path: filePath, fullPage: true });
   } catch (err: unknown) {
     logError("Failed to capture screenshot", err);
     const message = err instanceof Error ? err.message : String(err);
-    await fs.writeFile(filePath + ".error.txt", `Screenshot failed: ${message}`);
+    await fs.writeFile(
+      filePath + ".error.txt",
+      `Screenshot failed: ${message}`,
+    );
   }
 }
 
@@ -45,7 +45,12 @@ export async function captureSnapshots(
   commandId: number,
   phase: "before" | "after",
 ): Promise<SnapshotSet> {
-  const screenshotPath = snapshotFilePath(sessionDir, commandId, phase, "screenshot");
+  const screenshotPath = snapshotFilePath(
+    sessionDir,
+    commandId,
+    phase,
+    "screenshot",
+  );
   const a11yPath = snapshotFilePath(sessionDir, commandId, phase, "a11y");
   const htmlPath = snapshotFilePath(sessionDir, commandId, phase, "html");
 

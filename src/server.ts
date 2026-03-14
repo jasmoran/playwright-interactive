@@ -26,10 +26,7 @@ const RemoveCommandSchema = z.object({
   command_id: z.number().int().positive(),
 });
 
-function formatSnapshotPaths(
-  label: string,
-  snapshots: SnapshotSet,
-): string {
+function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
   return [
     `${label}:`,
     `  screenshot: ${snapshots.screenshotPath}`,
@@ -133,16 +130,27 @@ export function createServer(): Server {
     try {
       switch (name) {
         case "start_session":
-          return await handleStartSession(sessionManager, request.params.arguments);
+          return await handleStartSession(
+            sessionManager,
+            request.params.arguments,
+          );
         case "run_command":
-          return await handleRunCommand(sessionManager, request.params.arguments);
+          return await handleRunCommand(
+            sessionManager,
+            request.params.arguments,
+          );
         case "remove_command":
-          return await handleRemoveCommand(sessionManager, request.params.arguments);
+          return await handleRemoveCommand(
+            sessionManager,
+            request.params.arguments,
+          );
         case "end_session":
           return await handleEndSession(sessionManager);
         default:
           return {
-            content: [{ type: "text" as const, text: `Unknown tool: ${String(name)}` }],
+            content: [
+              { type: "text" as const, text: `Unknown tool: ${String(name)}` },
+            ],
             isError: true,
           };
       }
@@ -168,7 +176,9 @@ async function handleStartSession(
 
   const pomList = [...session.pomClasses.keys()];
   const pomInfo =
-    pomList.length > 0 ? `POMs loaded: [${pomList.join(", ")}]` : "No POMs loaded";
+    pomList.length > 0
+      ? `POMs loaded: [${pomList.join(", ")}]`
+      : "No POMs loaded";
 
   return {
     content: [
@@ -188,13 +198,15 @@ async function handleStartSession(
 async function handleRunCommand(
   sessionManager: SessionManager,
   args: unknown,
-): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
+): Promise<{
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+}> {
   const params = RunCommandSchema.parse(args);
   const session = sessionManager.getSession();
 
   // Peek at next ID for snapshot file naming
-  const commandId =
-    session.commandRegistry.getAllCommands().length + 1;
+  const commandId = session.commandRegistry.getAllCommands().length + 1;
 
   const beforeSnapshots = await captureSnapshots(
     session.page,
@@ -253,7 +265,10 @@ async function handleRunCommand(
 async function handleRemoveCommand(
   sessionManager: SessionManager,
   args: unknown,
-): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
+): Promise<{
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+}> {
   const params = RemoveCommandSchema.parse(args);
   const session = sessionManager.getSession();
 
