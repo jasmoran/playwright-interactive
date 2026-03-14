@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { getErrorMessage } from "../util/errors.js";
 import { logError } from "../util/logger.js";
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
@@ -29,8 +30,7 @@ export async function executeCommand(
     await fn(...paramValues);
     return { error: undefined };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
     logError("Command execution failed", err);
-    return { error: message };
+    return { error: getErrorMessage(err) };
   }
 }

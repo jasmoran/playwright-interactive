@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import type { Page } from "@playwright/test";
 import type { SnapshotSet } from "../types.js";
+import { getErrorMessage } from "../util/errors.js";
 import { logError } from "../util/logger.js";
 import { snapshotFilePath } from "../util/paths.js";
 
@@ -9,8 +10,7 @@ async function captureScreenshot(page: Page, filePath: string): Promise<void> {
     await page.screenshot({ path: filePath, fullPage: true });
   } catch (err: unknown) {
     logError("Failed to capture screenshot", err);
-    const message = err instanceof Error ? err.message : String(err);
-    await fs.writeFile(filePath, `Screenshot failed: ${message}`);
+    await fs.writeFile(filePath, `Screenshot failed: ${getErrorMessage(err)}`);
   }
 }
 
@@ -20,8 +20,10 @@ async function captureA11y(page: Page, filePath: string): Promise<void> {
     await fs.writeFile(filePath, snapshot, "utf-8");
   } catch (err: unknown) {
     logError("Failed to capture accessibility snapshot", err);
-    const message = err instanceof Error ? err.message : String(err);
-    await fs.writeFile(filePath, `Accessibility snapshot failed: ${message}`);
+    await fs.writeFile(
+      filePath,
+      `Accessibility snapshot failed: ${getErrorMessage(err)}`,
+    );
   }
 }
 
@@ -31,8 +33,7 @@ async function captureHtml(page: Page, filePath: string): Promise<void> {
     await fs.writeFile(filePath, html, "utf-8");
   } catch (err: unknown) {
     logError("Failed to capture HTML", err);
-    const message = err instanceof Error ? err.message : String(err);
-    await fs.writeFile(filePath, `HTML capture failed: ${message}`);
+    await fs.writeFile(filePath, `HTML capture failed: ${getErrorMessage(err)}`);
   }
 }
 

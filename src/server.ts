@@ -5,6 +5,7 @@ import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
 import { SessionManager } from "./session/session-manager.js";
 import { captureSnapshots } from "./snapshot/snapshot-capture.js";
 import type { SnapshotSet } from "./types.js";
+import { getErrorMessage } from "./util/errors.js";
 import { logError } from "./util/logger.js";
 
 function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
@@ -155,10 +156,14 @@ export function createServer(): McpServer {
           isError: error !== undefined,
         };
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
         logError("run_command failed", err);
         return {
-          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Error: ${getErrorMessage(err)}`,
+            },
+          ],
           isError: true,
         };
       }
