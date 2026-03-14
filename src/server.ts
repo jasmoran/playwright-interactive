@@ -2,7 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { executeCommand } from "./command/command-executor.js";
 import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
-import { SessionManager } from "./session/session-manager.js";
+import {
+  SessionManager,
+  type SessionState,
+} from "./session/session-manager.js";
 import { captureSnapshots } from "./snapshot/snapshot-capture.js";
 import type { SnapshotSet } from "./types.js";
 import { getErrorMessage } from "./util/errors.js";
@@ -15,6 +18,15 @@ function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
     `  a11y: ${snapshots.a11yPath}`,
     `  html: ${snapshots.htmlPath}`,
   ].join("\n");
+}
+
+async function regenerateSpecFile(session: SessionState): Promise<void> {
+  const specContent = generateSpecFile(
+    session.commandRegistry.getActiveCommands(),
+    session.pomImportPaths,
+    session.outputFile,
+  );
+  await writeSpecFile(session.outputFile, specContent);
 }
 
 export function createServer(): McpServer {
@@ -131,13 +143,7 @@ export function createServer(): McpServer {
           error,
         });
 
-        // Regenerate spec file
-        const specContent = generateSpecFile(
-          session.commandRegistry.getActiveCommands(),
-          session.pomImportPaths,
-          session.outputFile,
-        );
-        await writeSpecFile(session.outputFile, specContent);
+        await regenerateSpecFile(session);
 
         const resultLines = [
           `Command ID: ${String(record.id)}`,
