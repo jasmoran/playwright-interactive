@@ -29,7 +29,12 @@ async function regenerateSpecFile(session: SessionState): Promise<void> {
   await writeSpecFile(session.outputFile, specContent);
 }
 
-export function createServer(): McpServer {
+export interface ServerInstance {
+  readonly server: McpServer;
+  readonly cleanup: () => Promise<void>;
+}
+
+export function createServer(): ServerInstance {
   const server = new McpServer({
     name: "playwright-interactive",
     version: "0.1.0",
@@ -245,5 +250,11 @@ export function createServer(): McpServer {
     },
   );
 
-  return server;
+  async function cleanup(): Promise<void> {
+    if (sessionManager.hasActiveSession()) {
+      await sessionManager.endSession();
+    }
+  }
+
+  return { server, cleanup };
 }
