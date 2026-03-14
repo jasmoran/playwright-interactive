@@ -25,13 +25,12 @@ The generated test file is a standard Playwright test that can be run independen
 ```bash
 npm install
 npx playwright install chromium
-npm run build
 ```
 
 To test manually:
 
 ```bash
-npx @modelcontextprotocol/inspector node dist/index.js
+npx @modelcontextprotocol/inspector npx tsx src/index.ts
 ```
 
 ## MCP client configuration
@@ -42,8 +41,8 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
 {
   "mcpServers": {
     "playwright-interactive": {
-      "command": "node",
-      "args": ["/absolute/path/to/dist/index.js"]
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/src/index.ts"]
     }
   }
 }
