@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
+  "bin": {
+    "playwright-interactive": "bin/playwright-interactive.mjs"
+  },
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/",
