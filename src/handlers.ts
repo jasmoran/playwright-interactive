@@ -1,5 +1,6 @@
 import { executeCommand } from "./command/command-executor.js";
 import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
+import { loadFile } from "./pom/pom-loader.js";
 import {
   SessionManager,
   type SessionState,
@@ -41,7 +42,6 @@ async function regenerateSpecFile(session: SessionState): Promise<void> {
 }
 
 interface StartSessionArgs {
-  readonly pom_paths?: readonly string[] | undefined;
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
 }
@@ -52,20 +52,46 @@ export async function handleStartSession(
 ): Promise<ToolResult> {
   const session = await sessionManager.startSession(args);
 
-  const pomList = [...session.pomClasses.keys()];
-  const pomInfo =
-    pomList.length > 0
-      ? `POMs loaded: [${pomList.join(", ")}]`
-      : "No POMs loaded";
-
   return textResult(
     [
       "Session started.",
-      pomInfo,
       `Output file: ${session.outputFile}`,
       `Artifacts directory: ${session.sessionDir}`,
     ].join("\n"),
   );
+}
+
+interface LoadFileArgs {
+  readonly file_path: string;
+}
+
+export async function handleLoadFile(
+  sessionManager: SessionManager,
+  args: LoadFileArgs,
+): Promise<ToolResult> {
+  const session = sessionManager.getSession();
+
+  try {
+    const exports = await loadFile(args.file_path);
+
+    if (exports.length === 0) {
+      return textResult(
+        `No classes or functions found in ${args.file_path}`,
+        true,
+      );
+    }
+
+    for (const exp of exports) {
+      session.pomClasses.set(exp.name, exp.value);
+      session.pomImportPaths.set(exp.name, exp.importPath);
+    }
+
+    const names = exports.map((e) => e.name);
+    return textResult(`Loaded from ${args.file_path}: [${names.join(", ")}]`);
+  } catch (err: unknown) {
+    logError("load_file failed", err);
+    return textResult(`Error loading file: ${getErrorMessage(err)}`, true);
+  }
 }
 
 interface RunCommandArgs {

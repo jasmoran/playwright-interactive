@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   handleEndSession,
+  handleLoadFile,
   handleRemoveCommand,
   handleRunCommand,
   handleStartSession,
@@ -25,13 +26,8 @@ export function createServer(): ServerInstance {
     "start_session",
     {
       description:
-        "Launch a headed Playwright browser window and start recording commands. " +
-        "Optionally load Page Object Model (POM) files via glob patterns.",
+        "Launch a headed Playwright browser window and start recording commands.",
       inputSchema: {
-        pom_paths: z
-          .array(z.string())
-          .optional()
-          .describe("Array of glob patterns resolving to .ts POM files"),
         output_file: z
           .string()
           .optional()
@@ -47,6 +43,20 @@ export function createServer(): ServerInstance {
       },
     },
     (args) => handleStartSession(sessionManager, args),
+  );
+
+  server.registerTool(
+    "load_file",
+    {
+      description:
+        "Dynamically load a TypeScript or JavaScript file during an active session. " +
+        "Exported classes and functions become available in the run_command eval scope. " +
+        "Can be called multiple times to load additional files.",
+      inputSchema: {
+        file_path: z.string().describe("Path to a .ts or .js file to load"),
+      },
+    },
+    (args) => handleLoadFile(sessionManager, args),
   );
 
   server.registerTool(

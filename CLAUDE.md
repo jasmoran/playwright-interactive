@@ -13,7 +13,7 @@ A strict TypeScript MCP server that enables an LLM agent to interactively contro
 
 ## Architecture
 
-The server exposes four MCP tools: `start_session`, `run_command`, `remove_command`, and `end_session`. Only one session may be active at a time.
+The server exposes five MCP tools: `start_session`, `load_file`, `run_command`, `remove_command`, and `end_session`. Only one session may be active at a time.
 
 ### start_session
 
@@ -21,11 +21,26 @@ Starts a **headed** Playwright browser window.
 
 **Parameters:**
 
-- `pom_paths` (optional): Array of glob patterns resolving to `.ts` POM (Page Object Model) files. These are loaded and made available in the eval scope for `run_command`.
 - `output_file` (optional): Name/path for the generated `.spec.ts` file. Defaults to a timestamp-based name like `test-2026-03-14-143022.spec.ts`.
 - `artifacts_dir` (optional): Directory for storing screenshots, a11y trees, and HTML snapshots. Defaults to `.playwright-interactive/` in the current working directory. Must persist until explicitly cleaned up by the user.
 
-**Returns:** Confirmation with resolved POM file list and output file path.
+**Returns:** Confirmation with output file path.
+
+### load_file
+
+Dynamically loads a TypeScript/JavaScript file during an active session, making its exported classes and functions available in the `run_command` eval scope. Can be called multiple times to load additional files as needed.
+
+**Parameters:**
+
+- `file_path` (required): Path to a `.ts` or `.js` file to load.
+
+**Behavior:**
+
+- Dynamically imports the file via tsx.
+- Extracts all named exports that are functions (class constructors) and adds them to the eval scope.
+- Tracks the import path for inclusion in the generated `.spec.ts` file.
+
+**Returns:** List of class/function names loaded from the file.
 
 ### run_command
 

@@ -15,7 +15,6 @@ export interface CommandRecord {
 }
 
 export interface StartSessionParams {
-  readonly pom_paths?: readonly string[] | undefined;
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
 }

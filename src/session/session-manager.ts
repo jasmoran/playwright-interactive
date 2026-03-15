@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { CommandRegistry } from "../command/command-registry.js";
-import { loadPoms, type LoadedPom } from "../pom/pom-loader.js";
 import type { StartSessionParams } from "../types.js";
 import { log } from "../util/logger.js";
 import { sessionDirName } from "../util/paths.js";
@@ -14,8 +13,8 @@ export interface SessionState {
   readonly outputFile: string;
   readonly artifactsDir: string;
   readonly commandRegistry: CommandRegistry;
-  readonly pomClasses: ReadonlyMap<string, unknown>;
-  readonly pomImportPaths: ReadonlyMap<string, string>;
+  readonly pomClasses: Map<string, unknown>;
+  readonly pomImportPaths: Map<string, string>;
 }
 
 function generateOutputFileName(): string {
@@ -56,15 +55,6 @@ export class SessionManager {
 
     const pomClasses = new Map<string, unknown>();
     const pomImportPaths = new Map<string, string>();
-    const loadedPomList: readonly LoadedPom[] =
-      params.pom_paths !== undefined && params.pom_paths.length > 0
-        ? await loadPoms(params.pom_paths)
-        : [];
-
-    for (const pom of loadedPomList) {
-      pomClasses.set(pom.className, pom.constructor);
-      pomImportPaths.set(pom.className, pom.importPath);
-    }
 
     const outputFile = path.resolve(
       params.output_file ?? generateOutputFileName(),
@@ -85,9 +75,7 @@ export class SessionManager {
 
     this.currentSession = session;
 
-    log(
-      `Session started. POMs: [${[...pomClasses.keys()].join(", ")}]. Output: ${outputFile}`,
-    );
+    log(`Session started. Output: ${outputFile}`);
 
     return session;
   }
