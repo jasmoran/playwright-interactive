@@ -57,10 +57,11 @@ Executes a single Playwright command via **eval** against the active page.
 **Behavior:**
 
 1. Capture **before** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
-2. Execute the command via eval. The `page` variable is always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`.
-3. Capture **after** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
-4. Append the command (with optional explanation comment) to the output `.spec.ts` file.
-5. Return a **sequential numeric command ID** (1, 2, 3, ...) along with file paths to all 6 snapshot files (before/after x screenshot/a11y/HTML).
+2. Execute the command via eval with a **proxied page** that tracks element interactions. The `page` variable is always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`.
+3. Capture **element-level screenshots** of each element interacted with during the command (via `locator.screenshot()`). These are cropped images of just the target element, captured before each action (click, fill, etc.).
+4. Capture **after** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
+5. Append the command (with optional explanation comment) to the output `.spec.ts` file.
+6. Return a **sequential numeric command ID** (1, 2, 3, ...) along with file paths to all 6 snapshot files (before/after x screenshot/a11y/HTML) and any element screenshot paths.
 
 **Error handling:** If the command throws (element not found, timeout, etc.), catch the error and return it as part of the MCP result. Still capture after-snapshots so the agent can see the page state.
 
@@ -87,9 +88,9 @@ Removes a previously executed command from the output `.spec.ts` file.
 
 ### end_session
 
-Closes the browser and finalizes the session. The session video recording is saved as `recording.webm` in the session artifacts directory.
+Closes the browser and finalizes the session. The session video recording is saved as `recording.webm` and the Playwright trace is saved as `trace.zip` in the session artifacts directory.
 
-**Returns:** The path to the generated `.spec.ts` file and the path to the session video recording.
+**Returns:** The path to the generated `.spec.ts` file, the session video recording, and the trace file.
 
 ## Generated Output File Format
 
@@ -118,6 +119,7 @@ All snapshots are stored under `artifacts_dir` (default: `.playwright-interactiv
 ```
 .playwright-interactive/
   session-<timestamp>/
+    trace.zip
     recording.webm
     cmd-<id>-before-screenshot.png
     cmd-<id>-before-a11y.txt
@@ -125,13 +127,27 @@ All snapshots are stored under `artifacts_dir` (default: `.playwright-interactiv
     cmd-<id>-after-screenshot.png
     cmd-<id>-after-a11y.txt
     cmd-<id>-after-html.html
+    cmd-<id>-element-0.png
+    cmd-<id>-element-1.png
 ```
 
-The `recording.webm` file is a video recording of the entire browser session, captured automatically via Playwright's built-in `recordVideo` context option.
+The `trace.zip` file is a full Playwright trace (viewable with `npx playwright show-trace trace.zip`). The `recording.webm` file is a video recording of the entire browser session. Element screenshot files (`cmd-<id>-element-<n>.png`) are cropped images of individual elements interacted with during each command.
 
 Where `<id>` is the sequential numeric command ID (1, 2, 3, ...).
 
 Artifacts persist until the user explicitly cleans them up. There is no automatic cleanup.
+
+## Element Tracking
+
+Element-level screenshots are captured using a **Proxy-based approach** (`src/tracking/element-tracker.ts`). A JS `Proxy` wraps the `Page` object to intercept locator-creation methods (`getByRole`, `getByLabel`, `locator`, etc.), returning proxied `Locator` objects. These proxied locators intercept action methods (`click`, `fill`, `hover`, etc.) and capture `locator.screenshot()` of the target element before each action executes.
+
+This approach works transparently through POM classes: since the proxied page is passed to constructors via eval, any locator methods called inside POM methods are automatically tracked.
+
+The proxied page is only used during `executeCommand`. Snapshot capture (`captureSnapshots`) always uses the real page to avoid spurious element captures from internal locator calls like `page.locator("body").ariaSnapshot()`.
+
+## Tracing
+
+Full Playwright tracing is enabled for all sessions. Tracing starts when the browser context is created and stops when the session ends. The trace file is saved as `trace.zip` in the session directory and can be viewed with `npx playwright show-trace trace.zip`.
 
 ## Code Standards
 

@@ -60,6 +60,11 @@ export class SessionManager {
     const context = await browser.newContext({
       recordVideo: { dir: sessionDir },
     });
+    await context.tracing.start({
+      screenshots: true,
+      snapshots: true,
+      sources: true,
+    });
     const page = await context.newPage();
 
     const loadedExports = new Map<string, unknown>();
@@ -101,21 +106,27 @@ export class SessionManager {
     return this.currentSession !== null;
   }
 
-  async endSession(): Promise<{ outputFile: string; videoPath: string }> {
+  async endSession(): Promise<{
+    outputFile: string;
+    videoPath: string;
+    tracePath: string;
+  }> {
     const session = this.getSession();
     const outputFile = session.outputFile;
     const videoPath = path.join(session.sessionDir, "recording.webm");
+    const tracePath = path.join(session.sessionDir, "trace.zip");
 
     const video = session.page.video();
     await session.page.close();
     if (video !== null) {
       await video.saveAs(videoPath);
     }
+    await session.context.tracing.stop({ path: tracePath });
     await session.context.close();
     await session.browser.close();
     this.currentSession = null;
 
     log(`Session ended. Output: ${outputFile}, Video: ${videoPath}`);
-    return { outputFile, videoPath };
+    return { outputFile, videoPath, tracePath };
   }
 }

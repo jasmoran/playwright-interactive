@@ -4,6 +4,12 @@ export interface SnapshotSet {
   readonly htmlPath: string;
 }
 
+export interface ElementCapture {
+  readonly locatorDescription: string;
+  readonly action: string;
+  readonly screenshotPath: string;
+}
+
 export interface CommandRecord {
   readonly id: number;
   readonly command: string;
@@ -12,6 +18,7 @@ export interface CommandRecord {
   readonly beforeSnapshots: SnapshotSet;
   readonly afterSnapshots: SnapshotSet;
   readonly error: string | undefined;
+  readonly elementScreenshots: readonly ElementCapture[];
 }
 
 export interface StartSessionParams {

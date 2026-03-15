@@ -1,4 +1,4 @@
-import type { CommandRecord, SnapshotSet } from "../types.js";
+import type { CommandRecord, ElementCapture, SnapshotSet } from "../types.js";
 
 export interface NewCommandInput {
   readonly command: string;
@@ -6,6 +6,7 @@ export interface NewCommandInput {
   readonly beforeSnapshots: SnapshotSet;
   readonly afterSnapshots: SnapshotSet;
   readonly error: string | undefined;
+  readonly elementScreenshots: readonly ElementCapture[];
 }
 
 export class CommandRegistry {
@@ -21,6 +22,7 @@ export class CommandRegistry {
       beforeSnapshots: input.beforeSnapshots,
       afterSnapshots: input.afterSnapshots,
       error: input.error,
+      elementScreenshots: input.elementScreenshots,
     };
     this.commands.push(record);
     return record;

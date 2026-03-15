@@ -6,6 +6,7 @@ import {
   type SessionState,
 } from "./session/session-manager.js";
 import { captureSnapshots } from "./snapshot/snapshot-capture.js";
+import { ElementTracker } from "./tracking/element-tracker.js";
 import type { SnapshotSet } from "./types.js";
 import { getErrorMessage } from "./util/errors.js";
 import { logError } from "./util/logger.js";
@@ -115,11 +116,16 @@ export async function handleRunCommand(
       "before",
     );
 
+    const tracker = new ElementTracker(session.sessionDir, commandId);
+    const trackedPage = tracker.createTrackedPage(session.page);
+
     const { error } = await executeCommand(
       args.command,
-      session.page,
+      trackedPage,
       session.loadedExports,
     );
+
+    const elementScreenshots = tracker.flush();
 
     const afterSnapshots = await captureSnapshots(
       session.page,
@@ -134,6 +140,7 @@ export async function handleRunCommand(
       beforeSnapshots,
       afterSnapshots,
       error,
+      elementScreenshots,
     });
 
     await regenerateSpecFile(session);
@@ -145,6 +152,15 @@ export async function handleRunCommand(
       formatSnapshotPaths("Before", beforeSnapshots),
       formatSnapshotPaths("After", afterSnapshots),
     ];
+
+    if (elementScreenshots.length > 0) {
+      resultLines.push("", "Element screenshots:");
+      for (const capture of elementScreenshots) {
+        resultLines.push(
+          `  ${capture.locatorDescription}.${capture.action}() -> ${capture.screenshotPath}`,
+        );
+      }
+    }
 
     if (error !== undefined) {
       resultLines.push("", `Error: ${error}`);
@@ -185,12 +201,14 @@ export async function handleRemoveCommand(
 export async function handleEndSession(
   sessionManager: SessionManager,
 ): Promise<ToolResult> {
-  const { outputFile, videoPath } = await sessionManager.endSession();
+  const { outputFile, videoPath, tracePath } =
+    await sessionManager.endSession();
   return textResult(
     [
       "Session ended.",
       `Generated test file: ${outputFile}`,
       `Session recording: ${videoPath}`,
+      `Trace file: ${tracePath}`,
     ].join("\n"),
   );
 }

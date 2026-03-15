@@ -28,3 +28,14 @@ export function snapshotFilePath(
 ): string {
   return path.join(sessionDir, snapshotFileName(commandId, phase, type));
 }
+
+export function elementScreenshotPath(
+  sessionDir: string,
+  commandId: number,
+  elementIndex: number,
+): string {
+  return path.join(
+    sessionDir,
+    `cmd-${String(commandId)}-element-${String(elementIndex)}.png`,
+  );
+}
