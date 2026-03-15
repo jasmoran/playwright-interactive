@@ -30,7 +30,7 @@ npx playwright install chromium
 To test manually:
 
 ```bash
-npx @modelcontextprotocol/inspector npx tsx src/index.ts
+npx -y @modelcontextprotocol/inspector npm start
 ```
 
 ## MCP client configuration
@@ -41,8 +41,8 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
 {
   "mcpServers": {
     "playwright-interactive": {
-      "command": "npx",
-      "args": ["tsx", "/absolute/path/to/src/index.ts"]
+      "command": "npm",
+      "args": ["start"]
     }
   }
 }
