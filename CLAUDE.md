@@ -22,7 +22,7 @@ Starts a **headed** Playwright browser window.
 **Parameters:**
 
 - `output_file` (optional): Name/path for the generated `.spec.ts` file. Defaults to a timestamp-based name like `test-2026-03-14-143022.spec.ts`.
-- `artifacts_dir` (optional): Directory for storing screenshots, a11y trees, and HTML snapshots. Defaults to `.playwright-interactive/` in the current working directory. Must persist until explicitly cleaned up by the user.
+- `artifacts_dir` (optional): Directory for storing screenshots, a11y trees, HTML snapshots, and session video recordings. Defaults to `.playwright-interactive/` in the current working directory. Must persist until explicitly cleaned up by the user.
 
 **Returns:** Confirmation with output file path.
 
@@ -87,9 +87,9 @@ Removes a previously executed command from the output `.spec.ts` file.
 
 ### end_session
 
-Closes the browser and finalizes the session.
+Closes the browser and finalizes the session. The session video recording is saved as `recording.webm` in the session artifacts directory.
 
-**Returns:** The path to the generated `.spec.ts` file.
+**Returns:** The path to the generated `.spec.ts` file and the path to the session video recording.
 
 ## Generated Output File Format
 
@@ -118,6 +118,7 @@ All snapshots are stored under `artifacts_dir` (default: `.playwright-interactiv
 ```
 .playwright-interactive/
   session-<timestamp>/
+    recording.webm
     cmd-<id>-before-screenshot.png
     cmd-<id>-before-a11y.txt
     cmd-<id>-before-html.html
@@ -125,6 +126,8 @@ All snapshots are stored under `artifacts_dir` (default: `.playwright-interactiv
     cmd-<id>-after-a11y.txt
     cmd-<id>-after-html.html
 ```
+
+The `recording.webm` file is a video recording of the entire browser session, captured automatically via Playwright's built-in `recordVideo` context option.
 
 Where `<id>` is the sequential numeric command ID (1, 2, 3, ...).
 

@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium, type Browser, type Page } from "@playwright/test";
+import {
+  chromium,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 import { CommandRegistry } from "../command/command-registry.js";
 import type { StartSessionParams } from "../types.js";
 import { log } from "../util/logger.js";
@@ -8,6 +13,7 @@ import { sessionDirName } from "../util/paths.js";
 
 export interface SessionState {
   readonly browser: Browser;
+  readonly context: BrowserContext;
   readonly page: Page;
   readonly sessionDir: string;
   readonly outputFile: string;
@@ -51,7 +57,10 @@ export class SessionManager {
       headless: false,
       ...(executablePath !== undefined ? { executablePath } : {}),
     });
-    const page = await browser.newPage();
+    const context = await browser.newContext({
+      recordVideo: { dir: sessionDir },
+    });
+    const page = await context.newPage();
 
     const loadedExports = new Map<string, unknown>();
     const exportImportPaths = new Map<string, string>();
@@ -64,6 +73,7 @@ export class SessionManager {
 
     const session: SessionState = {
       browser,
+      context,
       page,
       sessionDir,
       outputFile,
@@ -91,14 +101,21 @@ export class SessionManager {
     return this.currentSession !== null;
   }
 
-  async endSession(): Promise<string> {
+  async endSession(): Promise<{ outputFile: string; videoPath: string }> {
     const session = this.getSession();
     const outputFile = session.outputFile;
+    const videoPath = path.join(session.sessionDir, "recording.webm");
 
+    const video = session.page.video();
+    await session.page.close();
+    if (video !== null) {
+      await video.saveAs(videoPath);
+    }
+    await session.context.close();
     await session.browser.close();
     this.currentSession = null;
 
-    log(`Session ended. Output: ${outputFile}`);
-    return outputFile;
+    log(`Session ended. Output: ${outputFile}, Video: ${videoPath}`);
+    return { outputFile, videoPath };
   }
 }

@@ -185,6 +185,12 @@ export async function handleRemoveCommand(
 export async function handleEndSession(
   sessionManager: SessionManager,
 ): Promise<ToolResult> {
-  const outputFile = await sessionManager.endSession();
-  return textResult(`Session ended. Generated test file: ${outputFile}`);
+  const { outputFile, videoPath } = await sessionManager.endSession();
+  return textResult(
+    [
+      "Session ended.",
+      `Generated test file: ${outputFile}`,
+      `Session recording: ${videoPath}`,
+    ].join("\n"),
+  );
 }
