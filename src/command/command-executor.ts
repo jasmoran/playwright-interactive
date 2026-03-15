@@ -15,12 +15,12 @@ export interface ExecutionResult {
 export async function executeCommand(
   command: string,
   page: Page,
-  pomClasses: ReadonlyMap<string, unknown>,
+  loadedExports: ReadonlyMap<string, unknown>,
 ): Promise<ExecutionResult> {
   const paramNames: string[] = ["page", "expect"];
   const paramValues: unknown[] = [page, expect];
 
-  for (const [name, ctor] of pomClasses) {
+  for (const [name, ctor] of loadedExports) {
     paramNames.push(name);
     paramValues.push(ctor);
   }

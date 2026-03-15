@@ -1,6 +1,6 @@
 import { executeCommand } from "./command/command-executor.js";
 import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
-import { loadFile } from "./pom/pom-loader.js";
+import { loadFile } from "./loader/file-loader.js";
 import {
   SessionManager,
   type SessionState,
@@ -35,7 +35,7 @@ function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
 async function regenerateSpecFile(session: SessionState): Promise<void> {
   const specContent = generateSpecFile(
     session.commandRegistry.getActiveCommands(),
-    session.pomImportPaths,
+    session.exportImportPaths,
     session.outputFile,
   );
   await writeSpecFile(session.outputFile, specContent);
@@ -82,8 +82,8 @@ export async function handleLoadFile(
     }
 
     for (const exp of exports) {
-      session.pomClasses.set(exp.name, exp.value);
-      session.pomImportPaths.set(exp.name, exp.importPath);
+      session.loadedExports.set(exp.name, exp.value);
+      session.exportImportPaths.set(exp.name, exp.importPath);
     }
 
     const names = exports.map((e) => e.name);
@@ -118,7 +118,7 @@ export async function handleRunCommand(
     const { error } = await executeCommand(
       args.command,
       session.page,
-      session.pomClasses,
+      session.loadedExports,
     );
 
     const afterSnapshots = await captureSnapshots(

@@ -13,8 +13,8 @@ export interface SessionState {
   readonly outputFile: string;
   readonly artifactsDir: string;
   readonly commandRegistry: CommandRegistry;
-  readonly pomClasses: Map<string, unknown>;
-  readonly pomImportPaths: Map<string, string>;
+  readonly loadedExports: Map<string, unknown>;
+  readonly exportImportPaths: Map<string, string>;
 }
 
 function generateOutputFileName(): string {
@@ -53,8 +53,8 @@ export class SessionManager {
     });
     const page = await browser.newPage();
 
-    const pomClasses = new Map<string, unknown>();
-    const pomImportPaths = new Map<string, string>();
+    const loadedExports = new Map<string, unknown>();
+    const exportImportPaths = new Map<string, string>();
 
     const outputFile = path.resolve(
       params.output_file ?? generateOutputFileName(),
@@ -69,8 +69,8 @@ export class SessionManager {
       outputFile,
       artifactsDir,
       commandRegistry,
-      pomClasses,
-      pomImportPaths,
+      loadedExports,
+      exportImportPaths,
     };
 
     this.currentSession = session;

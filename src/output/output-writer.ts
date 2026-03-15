@@ -4,10 +4,10 @@ import type { CommandRecord } from "../types.js";
 
 function computeRelativeImport(
   outputFilePath: string,
-  pomFilePath: string,
+  importedFilePath: string,
 ): string {
   const outputDir = path.dirname(path.resolve(outputFilePath));
-  let rel = path.relative(outputDir, path.resolve(pomFilePath));
+  let rel = path.relative(outputDir, path.resolve(importedFilePath));
 
   // Strip .ts extension for import statement
   rel = rel.replace(/\.ts$/, "");
@@ -22,15 +22,15 @@ function computeRelativeImport(
 
 export function generateSpecFile(
   commands: readonly CommandRecord[],
-  pomImportPaths: ReadonlyMap<string, string>,
+  exportImportPaths: ReadonlyMap<string, string>,
   outputFilePath: string,
 ): string {
-  // Determine which POM classes are referenced in active commands
-  const usedPomClasses = new Set<string>();
+  // Determine which loaded exports are referenced in active commands
+  const usedExports = new Set<string>();
   for (const cmd of commands) {
-    for (const className of pomImportPaths.keys()) {
-      if (cmd.command.includes(className)) {
-        usedPomClasses.add(className);
+    for (const exportName of exportImportPaths.keys()) {
+      if (cmd.command.includes(exportName)) {
+        usedExports.add(exportName);
       }
     }
   }
@@ -40,10 +40,10 @@ export function generateSpecFile(
   // Import playwright test
   lines.push('import { test, expect } from "@playwright/test";');
 
-  // Import used POMs, grouped by file
+  // Import used exports, grouped by file
   const fileToClasses = new Map<string, string[]>();
-  for (const className of usedPomClasses) {
-    const filePath = pomImportPaths.get(className);
+  for (const className of usedExports) {
+    const filePath = exportImportPaths.get(className);
     if (filePath !== undefined) {
       const existing = fileToClasses.get(filePath);
       if (existing !== undefined) {
