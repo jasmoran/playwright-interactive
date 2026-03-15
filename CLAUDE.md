@@ -166,8 +166,9 @@ Full Playwright tracing is enabled for all sessions. Tracing starts when the bro
 ## Development Commands
 
 ```bash
-npm run build       # Compile TypeScript
-npm run lint        # Run ESLint
-npm run format      # Run Prettier
-npm run start       # Start the MCP server (stdio)
+npm run build        # Compile TypeScript
+npm run lint         # Run ESLint
+npm run format       # Run Prettier
+npm run format:check # Check Prettier formatting
+npm run start        # Start the MCP server (stdio)
 ```
