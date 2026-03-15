@@ -42,8 +42,8 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
 {
   "mcpServers": {
     "playwright-interactive": {
-      "command": "npm",
-      "args": ["start"]
+      "command": "npx",
+      "args": ["github:jasmoran/playwright-interactive"]
     }
   }
 }
