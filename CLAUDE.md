@@ -51,13 +51,13 @@ Executes a single Playwright command via **eval** against the active page.
 - `command` (required): A single Playwright command string. Examples:
   - `page.goto('https://example.com')`
   - `page.getByLabel('Email').fill('user@example.com')`
-  - `new LoginPage(page).login('user', 'pass')` (using a loaded POM)
+  - `new LoginPage(page).login('user', 'pass')` (using a loaded file)
 - `explanation` (optional but encouraged): A human-readable explanation of what this command does. Written as a comment above the command in the output file.
 
 **Behavior:**
 
 1. Capture **before** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
-2. Execute the command via eval. The `page` variable is always in scope. Loaded POM classes are in scope. POMs use **constructor injection** for the page instance: `new SomePage(page)`.
+2. Execute the command via eval. The `page` variable is always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`.
 3. Capture **after** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
 4. Append the command (with optional explanation comment) to the output `.spec.ts` file.
 5. Return a **sequential numeric command ID** (1, 2, 3, ...) along with file paths to all 6 snapshot files (before/after x screenshot/a11y/HTML).
@@ -93,7 +93,7 @@ Closes the browser and finalizes the session.
 
 ## Generated Output File Format
 
-The output file is a Playwright test file (`.spec.ts`) that uses **Playwright Test fixtures**. It assumes POMs are importable from the project paths. Example shape:
+The output file is a Playwright test file (`.spec.ts`) that uses **Playwright Test fixtures**. It assumes loaded files are importable from the project paths. Example shape:
 
 ```typescript
 import { test, expect } from "@playwright/test";
