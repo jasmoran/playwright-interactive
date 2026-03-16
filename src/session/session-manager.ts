@@ -52,7 +52,7 @@ export class SessionManager {
     log(`Session directory: ${sessionDir}`);
 
     if (params.env_file !== undefined) {
-      await loadEnvFile(params.env_file);
+      loadEnvFile(params.env_file);
     }
 
     const executablePath = process.env["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"];
