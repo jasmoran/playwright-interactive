@@ -42,6 +42,82 @@ async function regenerateSpecFile(session: SessionState): Promise<void> {
   await writeSpecFile(session.outputFile, specContent);
 }
 
+const JS_RESERVED = new Set([
+  "break",
+  "case",
+  "catch",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "in",
+  "instanceof",
+  "new",
+  "return",
+  "switch",
+  "this",
+  "throw",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "class",
+  "const",
+  "enum",
+  "export",
+  "extends",
+  "import",
+  "super",
+  "implements",
+  "interface",
+  "let",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "static",
+  "yield",
+  "await",
+  "async",
+  "null",
+  "undefined",
+  "true",
+  "false",
+  "NaN",
+  "Infinity",
+]);
+
+const BUILTIN_PARAMS = new Set(["page", "expect"]);
+
+const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+
+function validateAssignTo(
+  assignTo: string,
+  loadedExports: ReadonlyMap<string, unknown>,
+): string | undefined {
+  if (!VALID_IDENTIFIER.test(assignTo)) {
+    return `"${assignTo}" is not a valid JavaScript identifier`;
+  }
+  if (JS_RESERVED.has(assignTo)) {
+    return `"${assignTo}" is a reserved word`;
+  }
+  if (BUILTIN_PARAMS.has(assignTo)) {
+    return `"${assignTo}" would shadow a built-in parameter`;
+  }
+  if (loadedExports.has(assignTo)) {
+    return `"${assignTo}" would shadow a loaded export`;
+  }
+  return undefined;
+}
+
 interface StartSessionArgs {
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
@@ -98,6 +174,7 @@ export async function handleLoadFile(
 interface RunCommandArgs {
   readonly command: string;
   readonly explanation?: string | undefined;
+  readonly assign_to?: string | undefined;
 }
 
 export async function handleRunCommand(
@@ -106,6 +183,16 @@ export async function handleRunCommand(
 ): Promise<ToolResult> {
   try {
     const session = sessionManager.getSession();
+
+    if (args.assign_to !== undefined) {
+      const validationError = validateAssignTo(
+        args.assign_to,
+        session.loadedExports,
+      );
+      if (validationError !== undefined) {
+        return textResult(`Invalid assign_to: ${validationError}`, true);
+      }
+    }
 
     const commandId = session.commandRegistry.peekNextId();
 
@@ -119,12 +206,16 @@ export async function handleRunCommand(
     const tracker = new ElementTracker(session.sessionDir, commandId);
     const trackedPage = tracker.createTrackedPage(session.page);
 
-    const { error } = await executeCommand(
+    const { error, returnValue } = await executeCommand(
       args.command,
       trackedPage,
       session.loadedExports,
-      session.scope,
+      session.assignedVars,
     );
+
+    if (args.assign_to !== undefined && error === undefined) {
+      session.assignedVars.set(args.assign_to, returnValue);
+    }
 
     const elementScreenshots = tracker.flush();
 
@@ -138,6 +229,7 @@ export async function handleRunCommand(
     const record = session.commandRegistry.addCommand({
       command: args.command,
       explanation: args.explanation,
+      assignTo: args.assign_to,
       beforeSnapshots,
       afterSnapshots,
       error,
@@ -153,6 +245,10 @@ export async function handleRunCommand(
       formatSnapshotPaths("Before", beforeSnapshots),
       formatSnapshotPaths("After", afterSnapshots),
     ];
+
+    if (args.assign_to !== undefined && error === undefined) {
+      resultLines.push("", `Assigned to: ${args.assign_to}`);
+    }
 
     if (elementScreenshots.length > 0) {
       resultLines.push("", "Element screenshots:");

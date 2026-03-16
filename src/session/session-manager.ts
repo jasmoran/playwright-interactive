@@ -21,7 +21,7 @@ export interface SessionState {
   readonly commandRegistry: CommandRegistry;
   readonly loadedExports: Map<string, unknown>;
   readonly exportImportPaths: Map<string, string>;
-  readonly scope: Record<string, unknown>;
+  readonly assignedVars: Map<string, unknown>;
 }
 
 function generateOutputFileName(): string {
@@ -77,7 +77,7 @@ export class SessionManager {
 
     const commandRegistry = new CommandRegistry();
 
-    const scope: Record<string, unknown> = {};
+    const assignedVars = new Map<string, unknown>();
 
     const session: SessionState = {
       browser,
@@ -89,7 +89,7 @@ export class SessionManager {
       commandRegistry,
       loadedExports,
       exportImportPaths,
-      scope,
+      assignedVars,
     };
 
     this.currentSession = session;

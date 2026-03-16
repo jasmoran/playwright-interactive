@@ -62,18 +62,15 @@ export function generateSpecFile(
   lines.push("");
   lines.push('test("recorded session", async ({ page }) => {');
 
-  // Emit scope declaration if any command references it
-  const usesScope = commands.some((cmd) => cmd.command.includes("scope"));
-  if (usesScope) {
-    lines.push("  const scope: Record<string, unknown> = {};");
-    lines.push("");
-  }
-
   for (const cmd of commands) {
     if (cmd.explanation !== undefined) {
       lines.push(`  // ${cmd.explanation}`);
     }
-    lines.push(`  await ${cmd.command};`);
+    if (cmd.assignTo !== undefined) {
+      lines.push(`  const ${cmd.assignTo} = await ${cmd.command};`);
+    } else {
+      lines.push(`  await ${cmd.command};`);
+    }
     lines.push("");
   }
 

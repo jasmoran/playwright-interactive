@@ -66,8 +66,8 @@ export function createServer(): ServerInstance {
         "Execute a single Playwright command against the active page. " +
         "Captures before/after snapshots (screenshot, accessibility tree, HTML). " +
         "Commands should be single expressions like page.goto('...') or new LoginPage(page).login('...'). " +
-        "A persistent `scope` object is available for storing and retrieving values across commands, " +
-        "e.g. `scope.login = new LoginPage(page)` then later `scope.login.login('user', 'pass')`. " +
+        "Use `assign_to` to capture a return value for use in later commands, " +
+        "e.g. command: `new LoginPage(page)`, assign_to: `login`, then later command: `login.login('user', 'pass')`. " +
         "Provide an explanation to document the action. Do not combine multiple commands with semicolons.",
       inputSchema: {
         command: z
@@ -80,6 +80,14 @@ export function createServer(): ServerInstance {
           .optional()
           .describe(
             "Human-readable explanation of this command, written as a comment in the output file",
+          ),
+        assign_to: z
+          .string()
+          .optional()
+          .describe(
+            "Variable name to assign the command's return value to. " +
+              "Makes the value available by that name in subsequent commands. " +
+              "Must be a valid JS identifier. Produces `const name = await expr;` in the output file.",
           ),
       },
     },

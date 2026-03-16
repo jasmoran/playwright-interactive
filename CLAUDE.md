@@ -52,14 +52,14 @@ Executes a single Playwright command via **eval** against the active page.
   - `page.goto('https://example.com')`
   - `page.getByLabel('Email').fill('user@example.com')`
   - `new LoginPage(page).login('user', 'pass')` (using a loaded file)
-  - `scope.login = new LoginPage(page)` (store a POM instance for later)
-  - `scope.login.login('user', 'pass')` (use a previously stored POM)
+  - `login.login('user', 'pass')` (using a previously assigned variable)
 - `explanation` (optional but encouraged): A human-readable explanation of what this command does. Written as a comment above the command in the output file.
+- `assign_to` (optional): Variable name to assign the command's return value to. The value becomes available by that name in subsequent commands. Must be a valid JS identifier and must not shadow built-in parameters (`page`, `expect`) or loaded exports. Produces `const name = await expr;` in the output file.
 
 **Behavior:**
 
 1. Capture **before** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
-2. Execute the command via eval with a **proxied page** that tracks element interactions. The `page` variable is always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`. A persistent `scope` object (`Record<string, unknown>`) is also in scope, allowing callers to assign values in one command and read them in subsequent commands (e.g. `scope.myVar = value`).
+2. Execute the command via eval with a **proxied page** that tracks element interactions. The `page` variable is always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`. Variables assigned via `assign_to` in previous commands are also in scope by name. When `assign_to` is provided, the command's return value is captured and stored for use in subsequent commands.
 3. Capture **element-level screenshots** of each element interacted with during the command (via `locator.screenshot()`). These are cropped images of just the target element, captured before each action (click, fill, etc.).
 4. Capture **after** snapshots (screenshot, accessibility tree, HTML) and save to `artifacts_dir`.
 5. Append the command (with optional explanation comment) to the output `.spec.ts` file.
@@ -114,20 +114,21 @@ test("recorded session", async ({ page }) => {
 });
 ```
 
-When commands use the `scope` object, a `scope` declaration is emitted at the top of the test body:
+When `assign_to` is used to capture values, the output uses `const` declarations:
 
 ```typescript
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "./poms/LoginPage";
 
 test("recorded session", async ({ page }) => {
-  const scope: Record<string, unknown> = {};
+  // Navigate to the login page
+  await page.goto("https://example.com/login");
 
   // Initialize the login page
-  await (scope.login = new LoginPage(page));
+  const login = await new LoginPage(page);
 
   // Log in with test credentials
-  await scope.login.login("user@test.com", "password123");
+  await login.login("user@test.com", "password123");
 
   // Verify we landed on the dashboard
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();

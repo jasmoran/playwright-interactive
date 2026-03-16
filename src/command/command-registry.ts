@@ -3,6 +3,7 @@ import type { CommandRecord, ElementCapture, SnapshotSet } from "../types.js";
 export interface NewCommandInput {
   readonly command: string;
   readonly explanation: string | undefined;
+  readonly assignTo: string | undefined;
   readonly beforeSnapshots: SnapshotSet;
   readonly afterSnapshots: SnapshotSet;
   readonly error: string | undefined;
@@ -18,6 +19,7 @@ export class CommandRegistry {
       id: this.nextId++,
       command: input.command,
       explanation: input.explanation,
+      assignTo: input.assignTo,
       removed: false,
       beforeSnapshots: input.beforeSnapshots,
       afterSnapshots: input.afterSnapshots,

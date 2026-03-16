@@ -14,6 +14,7 @@ export interface CommandRecord {
   readonly id: number;
   readonly command: string;
   readonly explanation: string | undefined;
+  readonly assignTo: string | undefined;
   removed: boolean;
   readonly beforeSnapshots: SnapshotSet;
   readonly afterSnapshots: SnapshotSet;
