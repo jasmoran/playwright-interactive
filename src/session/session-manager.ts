@@ -9,6 +9,7 @@ import {
 import { CommandRegistry } from "../command/command-registry.js";
 import type { StartSessionParams } from "../types.js";
 import { log, logError } from "../util/logger.js";
+import { loadEnvFile } from "../util/env-loader.js";
 import { sessionDirName } from "../util/paths.js";
 
 export interface SessionState {
@@ -49,6 +50,10 @@ export class SessionManager {
     await fs.mkdir(sessionDir, { recursive: true });
 
     log(`Session directory: ${sessionDir}`);
+
+    if (params.env_file !== undefined) {
+      await loadEnvFile(params.env_file);
+    }
 
     const executablePath = process.env["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"];
     if (executablePath !== undefined) {

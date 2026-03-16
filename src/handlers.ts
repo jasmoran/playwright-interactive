@@ -150,6 +150,7 @@ function collectKnownPages(session: SessionState): NamedPage[] {
 interface StartSessionArgs {
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
+  readonly env_file?: string | undefined;
 }
 
 export async function handleStartSession(

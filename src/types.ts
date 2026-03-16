@@ -30,4 +30,5 @@ export interface CommandRecord {
 export interface StartSessionParams {
   readonly output_file?: string | undefined;
   readonly artifacts_dir?: string | undefined;
+  readonly env_file?: string | undefined;
 }

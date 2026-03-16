@@ -23,6 +23,7 @@ Starts a **headed** Playwright browser window.
 
 - `output_file` (optional): Name/path for the generated `.spec.ts` file. Defaults to a timestamp-based name like `test-2026-03-14-143022.spec.ts`.
 - `artifacts_dir` (optional): Directory for storing screenshots, a11y trees, HTML snapshots, and session video recordings. Defaults to `.playwright-interactive/` in the current working directory. Must persist until explicitly cleaned up by the user.
+- `env_file` (optional): Path to a `.env` file to load into the server's environment variables before launching the browser. Variables are set on `process.env` and are available to subsequent operations (e.g., `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` can be set in the env file).
 
 **Returns:** Confirmation with output file path.
 

@@ -40,6 +40,12 @@ export function createServer(): ServerInstance {
           .describe(
             "Directory for snapshots. Defaults to .playwright-interactive/",
           ),
+        env_file: z
+          .string()
+          .optional()
+          .describe(
+            "Path to a .env file to load into the server's environment variables before launching the browser.",
+          ),
       },
     },
     (args) => handleStartSession(sessionManager, args),
