@@ -137,7 +137,7 @@ test("recorded session", async ({ page }) => {
 });
 ```
 
-When `context` is used in any command (e.g., to create new pages), the output destructures it from the fixture:
+The output always destructures both `page` and `context` from the test fixture, so `context` is available for multi-page tests:
 
 ```typescript
 import { test, expect } from "@playwright/test";
