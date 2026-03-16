@@ -52,8 +52,8 @@ Executes a single Playwright command via **eval** against the active page.
   - `page.goto('https://example.com')`
   - `page.getByLabel('Email').fill('user@example.com')`
   - `new LoginPage(page).login('user', 'pass')` (using a loaded file)
-  - `scope.token = await page.evaluate(() => localStorage.getItem('token'))` (store a value for later)
-  - `page.goto('/api?t=' + scope.token)` (use a previously stored value)
+  - `scope.login = new LoginPage(page)` (store a POM instance for later)
+  - `scope.login.login('user', 'pass')` (use a previously stored POM)
 - `explanation` (optional but encouraged): A human-readable explanation of what this command does. Written as a comment above the command in the output file.
 
 **Behavior:**
@@ -118,15 +118,19 @@ When commands use the `scope` object, a `scope` declaration is emitted at the to
 
 ```typescript
 import { test, expect } from "@playwright/test";
+import { LoginPage } from "./poms/LoginPage";
 
 test("recorded session", async ({ page }) => {
   const scope: Record<string, unknown> = {};
 
-  // Store the auth token
-  await (scope.token = await page.evaluate(() => localStorage.getItem("token")));
+  // Initialize the login page
+  await (scope.login = new LoginPage(page));
 
-  // Navigate with token
-  await page.goto("/api?t=" + scope.token);
+  // Log in with test credentials
+  await scope.login.login("user@test.com", "password123");
+
+  // Verify we landed on the dashboard
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 });
 ```
 
