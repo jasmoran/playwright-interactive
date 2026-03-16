@@ -14,19 +14,24 @@ const EXTENSIONS: Record<SnapshotType, string> = {
 
 function snapshotFileName(
   commandId: number,
+  pageName: string,
   phase: "before" | "after",
   type: SnapshotType,
 ): string {
-  return `cmd-${String(commandId)}-${phase}-${type}.${EXTENSIONS[type]}`;
+  return `cmd-${String(commandId)}-${pageName}-${phase}-${type}.${EXTENSIONS[type]}`;
 }
 
 export function snapshotFilePath(
   sessionDir: string,
   commandId: number,
+  pageName: string,
   phase: "before" | "after",
   type: SnapshotType,
 ): string {
-  return path.join(sessionDir, snapshotFileName(commandId, phase, type));
+  return path.join(
+    sessionDir,
+    snapshotFileName(commandId, pageName, phase, type),
+  );
 }
 
 export function elementScreenshotPath(

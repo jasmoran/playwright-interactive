@@ -59,8 +59,14 @@ export function generateSpecFile(
     lines.push(`import { ${classes.join(", ")} } from "${rel}";`);
   }
 
+  const usesContext = commands.some((cmd) => cmd.command.includes("context"));
+
   lines.push("");
-  lines.push('test("recorded session", async ({ page }) => {');
+  if (usesContext) {
+    lines.push('test("recorded session", async ({ page, context }) => {');
+  } else {
+    lines.push('test("recorded session", async ({ page }) => {');
+  }
 
   for (const cmd of commands) {
     if (cmd.explanation !== undefined) {

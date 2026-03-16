@@ -198,4 +198,14 @@ export class ElementTracker {
       },
     }) as Page;
   }
+
+  createTrackedPages(
+    pages: ReadonlyMap<string, Page>,
+  ): ReadonlyMap<string, Page> {
+    const result = new Map<string, Page>();
+    for (const [name, page] of pages) {
+      result.set(name, this.createTrackedPage(page));
+    }
+    return result;
+  }
 }

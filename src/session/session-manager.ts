@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 import { CommandRegistry } from "../command/command-registry.js";
 import type { StartSessionParams } from "../types.js";
-import { log } from "../util/logger.js";
+import { log, logError } from "../util/logger.js";
 import { sessionDirName } from "../util/paths.js";
 
 export interface SessionState {
@@ -112,25 +112,37 @@ export class SessionManager {
 
   async endSession(): Promise<{
     outputFile: string;
-    videoPath: string;
+    videoPaths: readonly string[];
     tracePath: string;
   }> {
     const session = this.getSession();
     const outputFile = session.outputFile;
-    const videoPath = path.join(session.sessionDir, "recording.webm");
     const tracePath = path.join(session.sessionDir, "trace.zip");
 
-    const video = session.page.video();
-    await session.page.close();
-    if (video !== null) {
-      await video.saveAs(videoPath);
-    }
     await session.context.tracing.stop({ path: tracePath });
+
+    // Close all pages — Playwright auto-saves videos to sessionDir
+    for (const page of session.context.pages()) {
+      try {
+        await page.close();
+      } catch (err: unknown) {
+        logError("Failed to close page", err);
+      }
+    }
+
     await session.context.close();
     await session.browser.close();
     this.currentSession = null;
 
-    log(`Session ended. Output: ${outputFile}, Video: ${videoPath}`);
-    return { outputFile, videoPath, tracePath };
+    // Collect all video files written by Playwright
+    const entries = await fs.readdir(session.sessionDir);
+    const videoPaths = entries
+      .filter((f) => f.endsWith(".webm"))
+      .map((f) => path.join(session.sessionDir, f));
+
+    log(
+      `Session ended. Output: ${outputFile}, Videos: ${String(videoPaths.length)}`,
+    );
+    return { outputFile, videoPaths, tracePath };
   }
 }

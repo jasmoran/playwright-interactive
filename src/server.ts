@@ -64,10 +64,12 @@ export function createServer(): ServerInstance {
     {
       description:
         "Execute a single Playwright command against the active page. " +
-        "Captures before/after snapshots (screenshot, accessibility tree, HTML). " +
+        "Captures before/after snapshots (screenshot, accessibility tree, HTML) for ALL known pages. " +
         "Commands should be single expressions like page.goto('...') or new LoginPage(page).login('...'). " +
         "Use `assign_to` to capture a return value for use in later commands, " +
         "e.g. command: `new LoginPage(page)`, assign_to: `login`, then later command: `login.login('user', 'pass')`. " +
+        "Both `page` (the default page) and `context` (the browser context) are available in scope. " +
+        "Use `context.newPage()` with `assign_to` to create additional pages/tabs. " +
         "Provide an explanation to document the action. Do not combine multiple commands with semicolons.",
       inputSchema: {
         command: z

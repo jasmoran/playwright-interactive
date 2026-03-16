@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import type { Page } from "@playwright/test";
-import type { SnapshotSet } from "../types.js";
+import type { PageSnapshotSet, SnapshotSet } from "../types.js";
 import { getErrorMessage } from "../util/errors.js";
 import { logError } from "../util/logger.js";
 import { snapshotFilePath } from "../util/paths.js";
@@ -44,16 +44,30 @@ export async function captureSnapshots(
   page: Page,
   sessionDir: string,
   commandId: number,
+  pageName: string,
   phase: "before" | "after",
 ): Promise<SnapshotSet> {
   const screenshotPath = snapshotFilePath(
     sessionDir,
     commandId,
+    pageName,
     phase,
     "screenshot",
   );
-  const a11yPath = snapshotFilePath(sessionDir, commandId, phase, "a11y");
-  const htmlPath = snapshotFilePath(sessionDir, commandId, phase, "html");
+  const a11yPath = snapshotFilePath(
+    sessionDir,
+    commandId,
+    pageName,
+    phase,
+    "a11y",
+  );
+  const htmlPath = snapshotFilePath(
+    sessionDir,
+    commandId,
+    pageName,
+    phase,
+    "html",
+  );
 
   await Promise.all([
     captureScreenshot(page, screenshotPath),
@@ -62,4 +76,34 @@ export async function captureSnapshots(
   ]);
 
   return { screenshotPath, a11yPath, htmlPath };
+}
+
+export interface NamedPage {
+  readonly name: string;
+  readonly page: Page;
+}
+
+export async function captureAllSnapshots(
+  pages: readonly NamedPage[],
+  sessionDir: string,
+  commandId: number,
+  phase: "before" | "after",
+): Promise<readonly PageSnapshotSet[]> {
+  const results: PageSnapshotSet[] = [];
+
+  for (const { name, page } of pages) {
+    if (page.isClosed()) {
+      continue;
+    }
+    const snapshots = await captureSnapshots(
+      page,
+      sessionDir,
+      commandId,
+      name,
+      phase,
+    );
+    results.push({ pageName: name, snapshots });
+  }
+
+  return results;
 }

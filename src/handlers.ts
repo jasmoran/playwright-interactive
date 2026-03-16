@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { executeCommand } from "./command/command-executor.js";
 import { generateSpecFile, writeSpecFile } from "./output/output-writer.js";
 import { loadFile } from "./loader/file-loader.js";
@@ -5,9 +6,12 @@ import {
   SessionManager,
   type SessionState,
 } from "./session/session-manager.js";
-import { captureSnapshots } from "./snapshot/snapshot-capture.js";
+import {
+  captureAllSnapshots,
+  type NamedPage,
+} from "./snapshot/snapshot-capture.js";
 import { ElementTracker } from "./tracking/element-tracker.js";
-import type { SnapshotSet } from "./types.js";
+import type { PageSnapshotSet } from "./types.js";
 import { getErrorMessage } from "./util/errors.js";
 import { logError } from "./util/logger.js";
 
@@ -24,13 +28,18 @@ function textResult(text: string, isError?: boolean): ToolResult {
   return { content: [{ type: "text", text }] };
 }
 
-function formatSnapshotPaths(label: string, snapshots: SnapshotSet): string {
-  return [
-    `${label}:`,
-    `  screenshot: ${snapshots.screenshotPath}`,
-    `  a11y: ${snapshots.a11yPath}`,
-    `  html: ${snapshots.htmlPath}`,
-  ].join("\n");
+function formatPageSnapshotPaths(
+  label: string,
+  pageSnapshots: readonly PageSnapshotSet[],
+): string {
+  const lines: string[] = [`${label}:`];
+  for (const { pageName, snapshots } of pageSnapshots) {
+    lines.push(`  [${pageName}]`);
+    lines.push(`    screenshot: ${snapshots.screenshotPath}`);
+    lines.push(`    a11y: ${snapshots.a11yPath}`);
+    lines.push(`    html: ${snapshots.htmlPath}`);
+  }
+  return lines.join("\n");
 }
 
 async function regenerateSpecFile(session: SessionState): Promise<void> {
@@ -95,7 +104,7 @@ const JS_RESERVED = new Set([
   "Infinity",
 ]);
 
-const BUILTIN_PARAMS = new Set(["page", "expect"]);
+const BUILTIN_PARAMS = new Set(["page", "context", "expect"]);
 
 const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
@@ -116,6 +125,26 @@ function validateAssignTo(
     return `"${assignTo}" would shadow a loaded export`;
   }
   return undefined;
+}
+
+function isPage(value: unknown): value is Page {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as Record<string, unknown>)["goto"] === "function" &&
+    typeof (value as Record<string, unknown>)["locator"] === "function" &&
+    typeof (value as Record<string, unknown>)["screenshot"] === "function"
+  );
+}
+
+function collectKnownPages(session: SessionState): NamedPage[] {
+  const pages: NamedPage[] = [{ name: "page", page: session.page }];
+  for (const [name, value] of session.assignedVars) {
+    if (isPage(value) && !value.isClosed()) {
+      pages.push({ name, page: value });
+    }
+  }
+  return pages;
 }
 
 interface StartSessionArgs {
@@ -196,21 +225,39 @@ export async function handleRunCommand(
 
     const commandId = session.commandRegistry.peekNextId();
 
-    const beforeSnapshots = await captureSnapshots(
-      session.page,
+    // Collect all known pages for before-snapshots
+    const beforePages = collectKnownPages(session);
+    const beforeSnapshots = await captureAllSnapshots(
+      beforePages,
       session.sessionDir,
       commandId,
       "before",
     );
 
+    // Create tracked (proxied) versions of all known pages
     const tracker = new ElementTracker(session.sessionDir, commandId);
-    const trackedPage = tracker.createTrackedPage(session.page);
+    const pageMap = new Map<string, Page>();
+    for (const { name, page } of beforePages) {
+      pageMap.set(name, page);
+    }
+    const trackedPages = tracker.createTrackedPages(pageMap);
+
+    // Build assignedVars with proxied pages substituted
+    const trackedAssignedVars = new Map(session.assignedVars);
+    for (const [name, trackedPage] of trackedPages) {
+      if (name !== "page" && trackedAssignedVars.has(name)) {
+        trackedAssignedVars.set(name, trackedPage);
+      }
+    }
+
+    const trackedDefaultPage = trackedPages.get("page") ?? session.page;
 
     const { error, returnValue } = await executeCommand(
       args.command,
-      trackedPage,
+      trackedDefaultPage,
+      session.context,
       session.loadedExports,
-      session.assignedVars,
+      trackedAssignedVars,
     );
 
     if (args.assign_to !== undefined && error === undefined) {
@@ -219,8 +266,10 @@ export async function handleRunCommand(
 
     const elementScreenshots = tracker.flush();
 
-    const afterSnapshots = await captureSnapshots(
-      session.page,
+    // Collect all known pages for after-snapshots (may include newly assigned page)
+    const afterPages = collectKnownPages(session);
+    const afterSnapshots = await captureAllSnapshots(
+      afterPages,
       session.sessionDir,
       commandId,
       "after",
@@ -242,8 +291,8 @@ export async function handleRunCommand(
       `Command ID: ${String(record.id)}`,
       `Command: ${record.command}`,
       "",
-      formatSnapshotPaths("Before", beforeSnapshots),
-      formatSnapshotPaths("After", afterSnapshots),
+      formatPageSnapshotPaths("Before", beforeSnapshots),
+      formatPageSnapshotPaths("After", afterSnapshots),
     ];
 
     if (args.assign_to !== undefined && error === undefined) {
@@ -298,14 +347,21 @@ export async function handleRemoveCommand(
 export async function handleEndSession(
   sessionManager: SessionManager,
 ): Promise<ToolResult> {
-  const { outputFile, videoPath, tracePath } =
+  const { outputFile, videoPaths, tracePath } =
     await sessionManager.endSession();
-  return textResult(
-    [
-      "Session ended.",
-      `Generated test file: ${outputFile}`,
-      `Session recording: ${videoPath}`,
-      `Trace file: ${tracePath}`,
-    ].join("\n"),
-  );
+
+  const lines = [
+    "Session ended.",
+    `Generated test file: ${outputFile}`,
+    `Trace file: ${tracePath}`,
+  ];
+
+  if (videoPaths.length > 0) {
+    lines.push(`Session recordings:`);
+    for (const videoPath of videoPaths) {
+      lines.push(`  ${videoPath}`);
+    }
+  }
+
+  return textResult(lines.join("\n"));
 }

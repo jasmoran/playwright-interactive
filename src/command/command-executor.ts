@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { getErrorMessage } from "../util/errors.js";
 import { logError } from "../util/logger.js";
 
@@ -16,11 +16,12 @@ export interface ExecutionResult {
 export async function executeCommand(
   command: string,
   page: Page,
+  context: BrowserContext,
   loadedExports: ReadonlyMap<string, unknown>,
   assignedVars: ReadonlyMap<string, unknown>,
 ): Promise<ExecutionResult> {
-  const paramNames: string[] = ["page", "expect"];
-  const paramValues: unknown[] = [page, expect];
+  const paramNames: string[] = ["page", "context", "expect"];
+  const paramValues: unknown[] = [page, context, expect];
 
   for (const [name, value] of assignedVars) {
     paramNames.push(name);

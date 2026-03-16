@@ -10,14 +10,19 @@ export interface ElementCapture {
   readonly screenshotPath: string;
 }
 
+export interface PageSnapshotSet {
+  readonly pageName: string;
+  readonly snapshots: SnapshotSet;
+}
+
 export interface CommandRecord {
   readonly id: number;
   readonly command: string;
   readonly explanation: string | undefined;
   readonly assignTo: string | undefined;
   removed: boolean;
-  readonly beforeSnapshots: SnapshotSet;
-  readonly afterSnapshots: SnapshotSet;
+  readonly beforeSnapshots: readonly PageSnapshotSet[];
+  readonly afterSnapshots: readonly PageSnapshotSet[];
   readonly error: string | undefined;
   readonly elementScreenshots: readonly ElementCapture[];
 }
