@@ -225,10 +225,10 @@ export async function handleRunCommand(
 
     const commandId = session.commandRegistry.peekNextId();
 
-    // Collect all known pages for before-snapshots
-    const beforePages = collectKnownPages(session);
-    const beforeSnapshots = await captureAllSnapshots(
-      beforePages,
+    // Capture before-snapshots for all known pages (must happen before execution)
+    const knownPages = collectKnownPages(session);
+    const allBeforeSnapshots = await captureAllSnapshots(
+      knownPages,
       session.sessionDir,
       commandId,
       "before",
@@ -237,7 +237,7 @@ export async function handleRunCommand(
     // Create tracked (proxied) versions of all known pages
     const tracker = new ElementTracker(session.sessionDir, commandId);
     const pageMap = new Map<string, Page>();
-    for (const { name, page } of beforePages) {
+    for (const { name, page } of knownPages) {
       pageMap.set(name, page);
     }
     const trackedPages = tracker.createTrackedPages(pageMap);
@@ -266,10 +266,24 @@ export async function handleRunCommand(
 
     const elementScreenshots = tracker.flush();
 
-    // Collect all known pages for after-snapshots (may include newly assigned page)
-    const afterPages = collectKnownPages(session);
+    // Determine which pages are relevant: pages that had locators used on
+    // them, plus any page newly created during this command
+    const touchedNames = tracker.getTouchedPageNames();
+    const knownPageNames = new Set(knownPages.map((p) => p.name));
+    const allPagesAfter = collectKnownPages(session);
+    const newPages = allPagesAfter.filter((p) => !knownPageNames.has(p.name));
+    const touchedAfterPages = allPagesAfter.filter((p) =>
+      touchedNames.has(p.name),
+    );
+
+    // Before-snapshots: filter to only pages that were touched
+    const beforeSnapshots = allBeforeSnapshots.filter((s) =>
+      touchedNames.has(s.pageName),
+    );
+
+    // After-snapshots: touched pages + newly created pages
     const afterSnapshots = await captureAllSnapshots(
-      afterPages,
+      [...touchedAfterPages, ...newPages],
       session.sessionDir,
       commandId,
       "after",

@@ -60,12 +60,13 @@ Executes a single Playwright command via **eval** against the active page.
 
 **Behavior:**
 
-1. Capture **before** snapshots (screenshot, accessibility tree, HTML) for **all known pages** (the default `page` plus any Page objects stored via `assign_to`) and save to `artifacts_dir`. Closed pages are skipped.
+1. Capture **before** snapshots (screenshot, accessibility tree, HTML) for all known pages and save to `artifacts_dir`. Closed pages are skipped.
 2. Execute the command via eval with **proxied pages** that track element interactions. The `page` variable (the default page) and `context` (the browser context) are always in scope. Exports loaded via `load_file` are in scope. Loaded classes use **constructor injection** for the page instance: `new SomePage(page)`. Variables assigned via `assign_to` in previous commands are also in scope by name — including any additional Page objects. All Page objects in scope are proxied for element tracking. When `assign_to` is provided, the command's return value is captured and stored for use in subsequent commands.
 3. Capture **element-level screenshots** of each element interacted with during the command (via `locator.screenshot()`). These are cropped images of just the target element, captured before each action (click, fill, etc.). Element tracking works across all known pages.
-4. Capture **after** snapshots (screenshot, accessibility tree, HTML) for **all known pages** (including any newly created page from this command) and save to `artifacts_dir`.
-5. Append the command (with optional explanation comment) to the output `.spec.ts` file.
-6. Return a **sequential numeric command ID** (1, 2, 3, ...) along with file paths to all snapshot files (per-page before/after x screenshot/a11y/HTML) and any element screenshot paths.
+4. Determine which pages were **touched** (had locator methods called on them) during command execution. Snapshots for untouched pages are discarded. Newly created pages (via `context.newPage()` with `assign_to`) are always included.
+5. Capture **after** snapshots for touched pages and newly created pages, and save to `artifacts_dir`.
+6. Append the command (with optional explanation comment) to the output `.spec.ts` file.
+7. Return a **sequential numeric command ID** (1, 2, 3, ...) along with file paths to all snapshot files (per-page before/after x screenshot/a11y/HTML) and any element screenshot paths.
 
 **Error handling:** If the command throws (element not found, timeout, etc.), catch the error and return it as part of the MCP result. Still capture after-snapshots so the agent can see the page state.
 

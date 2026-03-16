@@ -155,6 +155,7 @@ interface TrackerState {
   readonly sessionDir: string;
   readonly commandId: number;
   readonly captures: ElementCapture[];
+  readonly touchedPages: Set<string>;
   captureIndex: number;
 }
 
@@ -166,6 +167,7 @@ export class ElementTracker {
       sessionDir,
       commandId,
       captures: [],
+      touchedPages: new Set(),
       captureIndex: 0,
     };
   }
@@ -174,7 +176,11 @@ export class ElementTracker {
     return [...this.state.captures];
   }
 
-  createTrackedPage(realPage: Page): Page {
+  getTouchedPageNames(): ReadonlySet<string> {
+    return this.state.touchedPages;
+  }
+
+  private createTrackedPage(realPage: Page, pageName: string): Page {
     const state = this.state;
 
     return new Proxy(realPage, {
@@ -184,6 +190,7 @@ export class ElementTracker {
             ...args: unknown[]
           ) => Locator;
           return (...args: unknown[]): Locator => {
+            state.touchedPages.add(pageName);
             const realLocator = realMethod.apply(target, args) as Locator;
             const description = formatCall(prop, args);
             return createTrackedLocator(realLocator, description, state);
@@ -204,7 +211,7 @@ export class ElementTracker {
   ): ReadonlyMap<string, Page> {
     const result = new Map<string, Page>();
     for (const [name, page] of pages) {
-      result.set(name, this.createTrackedPage(page));
+      result.set(name, this.createTrackedPage(page, name));
     }
     return result;
   }
