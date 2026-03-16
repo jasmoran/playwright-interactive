@@ -66,6 +66,8 @@ export function createServer(): ServerInstance {
         "Execute a single Playwright command against the active page. " +
         "Captures before/after snapshots (screenshot, accessibility tree, HTML). " +
         "Commands should be single expressions like page.goto('...') or new LoginPage(page).login('...'). " +
+        "A persistent `scope` object is available for storing and retrieving values across commands, " +
+        "e.g. `scope.token = await page.evaluate(() => localStorage.getItem('token'))` then later `page.goto('/api?t=' + scope.token)`. " +
         "Provide an explanation to document the action. Do not combine multiple commands with semicolons.",
       inputSchema: {
         command: z

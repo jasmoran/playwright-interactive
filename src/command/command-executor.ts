@@ -16,9 +16,10 @@ export async function executeCommand(
   command: string,
   page: Page,
   loadedExports: ReadonlyMap<string, unknown>,
+  scope: Record<string, unknown>,
 ): Promise<ExecutionResult> {
-  const paramNames: string[] = ["page", "expect"];
-  const paramValues: unknown[] = [page, expect];
+  const paramNames: string[] = ["page", "expect", "scope"];
+  const paramValues: unknown[] = [page, expect, scope];
 
   for (const [name, ctor] of loadedExports) {
     paramNames.push(name);

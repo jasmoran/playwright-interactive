@@ -123,6 +123,7 @@ export async function handleRunCommand(
       args.command,
       trackedPage,
       session.loadedExports,
+      session.scope,
     );
 
     const elementScreenshots = tracker.flush();
