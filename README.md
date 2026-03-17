@@ -36,7 +36,23 @@ npx -y @modelcontextprotocol/inspector npm start
 
 ## MCP client configuration
 
-Add to your MCP client config (e.g. `claude_desktop_config.json`):
+### Claude Code
+
+Add the server from the command line:
+
+```bash
+claude mcp add playwright-interactive -- npx github:jasmoran/playwright-interactive
+```
+
+This registers the server for the current project. To make it available across all projects, add the `-s user` flag:
+
+```bash
+claude mcp add -s user playwright-interactive -- npx github:jasmoran/playwright-interactive
+```
+
+### Claude Desktop
+
+Add to your `claude_desktop_config.json`:
 
 ```json
 {
